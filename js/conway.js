@@ -20,6 +20,9 @@
             height: 20
         },
 
+        history: [],
+        step: 0,
+
         //store parallel grid with references to d3 objects
         grid: Life.copyGrid(Life.grid),
 
@@ -62,15 +65,54 @@
             } catch(e) { console.log(e, 'uh'); }
         },
 
-        update: function() {
+        update: function(grid) {
+
+            if (typeof grid === "undefined") {
+                console.log(grid, 'man');
+                grid = Life.grid;
+            }
+
+            //keep track of the history
+
             for( var i = 0; i < Life.WIDTH; i++) {
                 for ( var j = 0; j < Life.HEIGHT; j++) {
-                    if ( Life.grid[i][j] === 1 ) {
+                    if ( grid[i][j] === 1 ) {
                         this.addCell(i, j);
                     } else {
                         this.removeCell(i, j);
                     }
                 }
+            }
+        },
+
+        /*
+            reasonable options for now:
+            conway.go(0);     -> initialize
+            conway.go(1);     -> move up one step
+            conway.go(-1);    -> move back one step
+        */
+        go: function(step) {
+            if (typeof step === "undefined" || step > 0) {
+
+                //if the current step isn't the most recent
+                if (this.step < this.history.length) {
+                    this.update( this.history[this.step + 1]);
+                } else {
+                    Life.updateState();
+                    this.history.push( Life.copyGrid ( Life.grid ));
+                    this.update();
+                }
+
+                this.step += 1;
+            } else if (step === -1) {
+                if ( this.step > 1 ) {
+                    this.step -= 1;
+                    this.update( this.history[ this.step - 1 ]);
+                }
+            } else if (step === 0) {
+                this.step += 1;
+                this.history.push( Life.copyGrid ( Life.grid ));
+                this.update();
             }
         }
 
@@ -94,14 +136,19 @@
 
     //starting = [[],[],[],[],[],[12,13],[12,13],[14,15],[14,15]];
 
-    starting = [[],[],[],[10],[8, 10],[9, 10],[]];
+    //starting = [[],[],[],[10],[8, 10],[9, 10],[]];
 
     for (var i = 0; i < starting.length; i++) {
         for( var j = 0; j < starting[i].length; j++) {
             Life.grid[i][20 + starting[i][j]] = 1;
         }
     }
-    conway.update();
+
+    //initial update, draw everything
+    conway.go(0);
+
+
+    //leak
     window.conway = conway;
 
 })();
