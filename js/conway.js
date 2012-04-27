@@ -16,8 +16,8 @@
     var conway = {
 
         cell: {
-            width: 10,
-            height: 10
+            width: 20,
+            height: 20
         },
 
         //store parallel grid with references to d3 objects
@@ -27,6 +27,10 @@
         // make the X/Y slightly smaller. this is a hack, but a super
         // easy way to do rounded corners with adjacent elements
         addCell: function(row, col) {
+
+            if (d3.select('#c_' + row + '_' + col)[0][0] !== null) {
+                return;
+            }
             var cell = board.append("rect")
                 .attr("fill", "#05182F")
                 .attr("x", col * this.cell.width * 0.8)
@@ -48,21 +52,20 @@
         //reset the grid to 0
         removeCell: function(row, col) {
             try {
-                d3.select('#c_' + row + '_' + col).remove();
-                /*.transition()
+                d3.select('#c_' + row + '_' + col)
+                .transition()
                 .duration(400)
                     .style("opacity", 0)
-                    .delay(10).remove();*/
+                    .delay(10).remove();
 
             this.grid[row][col] = 0;
-            } catch(e) { ; }
+            } catch(e) { console.log(e, 'uh'); }
         },
 
         update: function() {
             for( var i = 0; i < Life.WIDTH; i++) {
                 for ( var j = 0; j < Life.HEIGHT; j++) {
                     if ( Life.grid[i][j] === 1 ) {
-                        console.log('adding', i, j);
                         this.addCell(i, j);
                     } else {
                         this.removeCell(i, j);
@@ -87,11 +90,11 @@
         [1]
     ];
 
-    starting = [[],[],[],[],[],[13,14,15]];
+    //starting = [[],[],[],[],[],[13,14,15]];
 
     //starting = [[],[],[],[],[],[12,13],[12,13],[14,15],[14,15]];
 
-    //starting = [[],[],[],[10],[8, 10],[9, 10],[]];
+    starting = [[],[],[],[10],[8, 10],[9, 10],[]];
 
     for (var i = 0; i < starting.length; i++) {
         for( var j = 0; j < starting[i].length; j++) {
