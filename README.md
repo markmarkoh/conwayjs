@@ -1,0 +1,10 @@
+========
+ConwayJS
+========
+
+
+
+Author
+======
+Mark DiMarco
+
