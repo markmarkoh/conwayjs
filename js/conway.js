@@ -54,15 +54,14 @@
         //remove a cell given it's column <col> and row <row>
         //reset the grid to 0
         removeCell: function(row, col) {
-            try {
-                d3.select('#c_' + row + '_' + col)
+            if( ! this.grid[row][col] ) return;
+            this.grid[row][col]
                 .transition()
                 .duration(400)
                     .style("opacity", 0)
                     .delay(10).remove();
 
             this.grid[row][col] = 0;
-            } catch(e) { console.log(e, 'uh'); }
         },
 
         update: function(grid) {
