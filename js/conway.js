@@ -38,7 +38,7 @@
                 .attr("fill", "#05182F")
                 .attr("x", col * this.cell.width * 0.8)
                 .attr("y", row * this.cell.width * 0.8)
-                .attr("rx", 2)
+                .attr("rx", 3)
                 .attr("id", 'c_' + row + "_" + col)
                 .attr("height", this.cell.height)
                 .attr("width", this.cell.width)
@@ -118,7 +118,7 @@
     };
 
 
-
+    //rhok austin starting logo
     var starting = [
         [11, 12],
         [4, 6, 8, 9, 12, 14, 15, 16],
