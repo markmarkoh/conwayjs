@@ -29,26 +29,38 @@
         // add a cell given it's column <col> and row <row>
         // make the X/Y slightly smaller. this is a hack, but a super
         // easy way to do rounded corners with adjacent elements
-        addCell: function(row, col) {
+        addCell: function(row, col, increment) {
 
-            if (d3.select('#c_' + row + '_' + col)[0][0] !== null) {
-                return;
+            var cell;
+
+            if (typeof increment === "undefined") {
+                increment = 0.1;
             }
-            var cell = board.append("rect")
-                .attr("fill", "#05182F")
-                .attr("x", col * this.cell.width * 0.8)
-                .attr("y", row * this.cell.width * 0.8)
-                .attr("rx", 3)
-                .attr("id", 'c_' + row + "_" + col)
-                .attr("height", this.cell.height)
-                .attr("width", this.cell.width)
-                .style('opacity', 0);
 
-            cell.transition()
-                .duration(600)
-                    .style("opacity", 1);
+           //if there is no cell there, add it
+           if ( this.grid[row][col] === 0 ) {
+                cell = board.append("rect")
+                    .attr("fill", "#05182F")
+                    .attr("x", col * this.cell.width * 0.8)
+                    .attr("y", row * this.cell.width * 0.8)
+                    .attr("rx", 3)
+                    .attr("id", 'c_' + row + "_" + col)
+                    .attr("height", this.cell.height)
+                    .attr("width", this.cell.width)
+                    .style('opacity', increment);
 
-            this.grid[row][col] = cell;
+                cell.increment = increment;
+
+                this.grid[row][col] = cell;
+            } else {
+                cell = this.grid[row][col];
+
+                cell.increment += increment;
+                cell.transition()
+                    .duration(200)
+                       .style("opacity", cell.increment);
+            }
+
         },
 
         //remove a cell given it's column <col> and row <row>
@@ -64,7 +76,7 @@
             this.grid[row][col] = 0;
         },
 
-        update: function(grid) {
+        update: function(grid, increment) {
 
             if (typeof grid === "undefined") {
                 console.log(grid, 'man');
@@ -76,9 +88,9 @@
             for( var i = 0; i < Life.WIDTH; i++) {
                 for ( var j = 0; j < Life.HEIGHT; j++) {
                     if ( grid[i][j] === 1 ) {
-                        this.addCell(i, j);
+                        this.addCell(i, j, increment);
                     } else {
-                        this.removeCell(i, j);
+                        this.removeCell(i, j, increment);
                     }
                 }
             }
@@ -91,7 +103,7 @@
             conway.go(-1);    -> move back one step
         */
         go: function(step) {
-            if (typeof step === "undefined" || step > 0) {
+            if (typeof step === "undefined" || step >= 1) {
 
                 //if the current step isn't the most recent
                 if (this.step < this.history.length) {
@@ -103,13 +115,23 @@
                 }
 
                 this.step += 1;
+
+            } else if (step > 0 && step < 1) {
+                var nextStep = Math.ceil(this.step);
+                this.step += step;
+                console.log(nextStep, this.step, step);
+                if ( this.step >= nextStep) {
+                    this.go(1);
+                } else {
+                    this.update(undefined, 0.1);
+                }
             } else if (step === -1) {
                 if ( this.step > 1 ) {
                     this.step -= 1;
                     this.update( this.history[ this.step - 1 ]);
                 }
             } else if (step === 0) {
-                this.step += 1;
+                this.step += .8;
                 this.history.push( Life.copyGrid ( Life.grid ));
                 this.update();
             }
