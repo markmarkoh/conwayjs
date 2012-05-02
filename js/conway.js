@@ -57,7 +57,7 @@
 
                 cell.increment += increment;
                 cell.transition()
-                    .duration(200)
+                    .duration(100)
                        .style("opacity", cell.increment);
             }
 
@@ -69,7 +69,7 @@
             if( ! this.grid[row][col] ) return;
             this.grid[row][col]
                 .transition()
-                .duration(400)
+                .duration(100)
                     .style("opacity", 0)
                     .delay(10).remove();
 
@@ -78,9 +78,14 @@
 
         update: function(grid, increment) {
 
-            if (typeof grid === "undefined") {
-                console.log(grid, 'man');
-                grid = Life.grid;
+            switch (typeof grid) {
+                case "number":
+                    increment = grid;
+                case "undefined":
+                    grid = Life.grid;
+                    break;
+                default:
+                    break;
             }
 
             //keep track of the history
@@ -97,55 +102,116 @@
         },
 
         /*
+            I love how *this* is my refactor from previously
+            unmanagable.
+
             reasonable options for now:
             conway.go(0);     -> initialize
             conway.go(1);     -> move up one step
             conway.go(-1);    -> move back one step
+            conway.go(.1);    -> go slowly
         */
-        go: function(step) {
-            console.log('go(', step, ')', 'this.step:', this.step);
-            var nextStep;
-            if (typeof step === "undefined" || step >= 1) {
+        isUpdating: false,
+        go: function(step, skip) {
 
-                //if the current step isn't the most recent
-                if (this.step < this.history.length) {
-                    this.update( this.history[this.step + 1]);
-                } else {
-                    Life.updateState();
-                    this.history.push( Life.copyGrid ( Life.grid ));
-                    this.update();
+            console.log('go() : ', step);
+            //partial value negative, like -.4
+            if (step < 0 && step > -1) {
+
+            //negative, -1
+            } else if ( step === -1) {
+                if (this.step > 0) {
+                    this.step -= 1;
+                    this.update( this.history[this.step], 1);
                 }
+
+            // 0, initial
+            } else if (step < -1) {
+                this.isUpdating = true;
+
+                 //only attempt to animate batch updates
+                //if it's less than ~10
+                if ( step > -10 ) {
+                    var self = this;
+                    (function go() {
+                        window.setTimeout(function() {
+                            if (step--) {
+                                self.go(-1);
+                                go();
+                            } else {
+                                self.isUpdating = false;
+                            }
+                        }, 50);
+                    })();
+                } else {
+                    while (++step <= 0) {
+                        this.go(-1);
+                    }
+                    this.isUpdating = false;
+                }
+            // 0, initial
+            } else if (step === 0) {
+                this.step += 1;
+                this.history.push ( Life.copyGrid ( Life.grid ));
+                this.update(1);
+
+            //partial value, positive like .4
+            } else if (step > 0 && step < 1) {
+
+                //if 1.9 turned into 2.0
+                if ( this.step + step >= Math.ceil(this.step)) {
+                    console.log('turning the base');
+
+                    this.step += step;
+                    //wow am I breaking DRY or what
+                    if (this.step < this.history.length) {
+                        this.update( this.history[ Math.floor(this.step) ], step);
+                    } else {
+                        Life.updateState();
+                        this.history.push( Life.copyGrid ( Life.grid ));
+                        this.update(step);
+                    }
+                } else {
+                    this.update(step);
+                    this.step += step;
+                }
+
+
+            //otherwise 1
+            } else if (step === 1) {
 
                 this.step += 1;
 
-            } else if (step > 0 && step < 1) {
+                if (this.step < this.history.length) {
+                    this.update( this.history[ Math.floor(this.step) ], 1);
+                } else {
+                    Life.updateState();
+                    this.history.push( Life.copyGrid ( Life.grid ));
+                    this.update(1);
+                }
 
-                nextStep = Math.ceil(this.step);
-                this.step += step;
-                console.log(nextStep, this.step, step);
-                if ( this.step >= nextStep) {
-                    this.go(1);
+            } else if (step > 1) {
+                this.isUpdating = true;
+                //only attempt to animate batch updates
+                //if it's less than ~10
+                if ( step < 10 ) {
+                    var self = this;
+                    (function go() {
+                        window.setTimeout(function() {
+                            if (step--) {
+                                self.go(1);
+                                go();
+                            } else {
+                                self.isUpdating = false;
+                            }
+                        }, 50);
+                    })();
                 } else {
-                    this.update(undefined, step);
+                    while (--step) {
+                        this.go(1);
+                    }
+                    this.isUpdating = false;
                 }
-            } else if (step > -1 && step < 0) {
-                nextStep = Math.floor(this.step);
-                this.step += step;
-                if ( this.step <= nextStep) {
-                    this.go(-1);
-                } else {
-                    this.update(undefined, step);
-                }
- 
-            } else if (step === -1) {
-                if ( this.step > 1 ) {
-                    this.step -= 1;
-                    this.update( this.history[ this.step - 1 ]);
-                }
-            } else if (step === 0) {
-                this.step += 1.1;
-                this.history.push( Life.copyGrid ( Life.grid ));
-                this.update();
             }
         }
 
