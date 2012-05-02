@@ -103,6 +103,8 @@
             conway.go(-1);    -> move back one step
         */
         go: function(step) {
+            console.log('go(', step, ')', 'this.step:', this.step);
+            var nextStep;
             if (typeof step === "undefined" || step >= 1) {
 
                 //if the current step isn't the most recent
@@ -117,21 +119,31 @@
                 this.step += 1;
 
             } else if (step > 0 && step < 1) {
-                var nextStep = Math.ceil(this.step);
+
+                nextStep = Math.ceil(this.step);
                 this.step += step;
                 console.log(nextStep, this.step, step);
                 if ( this.step >= nextStep) {
                     this.go(1);
                 } else {
-                    this.update(undefined, 0.1);
+                    this.update(undefined, step);
                 }
+            } else if (step > -1 && step < 0) {
+                nextStep = Math.floor(this.step);
+                this.step += step;
+                if ( this.step <= nextStep) {
+                    this.go(-1);
+                } else {
+                    this.update(undefined, step);
+                }
+ 
             } else if (step === -1) {
                 if ( this.step > 1 ) {
                     this.step -= 1;
                     this.update( this.history[ this.step - 1 ]);
                 }
             } else if (step === 0) {
-                this.step += .8;
+                this.step += 1.1;
                 this.history.push( Life.copyGrid ( Life.grid ));
                 this.update();
             }
