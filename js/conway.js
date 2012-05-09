@@ -22,6 +22,8 @@
 
         history: [],
         step: 0,
+        targetStep: 0,
+        drawThreshold: 15,
 
         //store parallel grid with references to d3 objects
         grid: Life.copyGrid(Life.grid),
@@ -57,7 +59,7 @@
 
                 cell.increment += increment;
                 cell.transition()
-                    .duration(100)
+                    .duration(150)
                        .style("opacity", cell.increment);
             }
 
@@ -69,7 +71,7 @@
             if( ! this.grid[row][col] ) return;
             this.grid[row][col]
                 .transition()
-                .duration(100)
+                .duration(150)
                     .style("opacity", 0)
                     .delay(10).remove();
 
@@ -106,113 +108,49 @@
             unmanagable.
 
             reasonable options for now:
-            conway.go(0);     -> initialize
             conway.go(5);     -> move to step 5
             conway.go(1);    -> move back to step 1
-            conway.go(.1);    -> go slowly up .1
         */
         isUpdating: false,
-        go: function(step, skip) {
-
-            console.log('go() : ', step);
-            //partial value negative, like -.4
-            if (step < 0 && step > -1) {
-
-            //negative, -1
-            } else if ( step === -1) {
-                if (this.step > 0) {
-                    this.step -= 1;
-                    this.update( this.history[this.step], 1);
-                }
-
-            // 0, initial
-            } else if (step < -1) {
-                this.isUpdating = true;
-
-                 //only attempt to animate batch updates
-                //if it's less than ~10
-                if ( step > -10 ) {
-                    var self = this;
-                    (function go() {
-                        window.setTimeout(function() {
-                            if (step--) {
-                                self.go(-1);
-                                go();
-                            } else {
-                                self.isUpdating = false;
-                            }
-                        }, 50);
-                    })();
-                } else {
-                    while (++step <= 0) {
-                        this.go(-1);
-                    }
-                    this.isUpdating = false;
-                }
-            // 0, initial
-            } else if (step === 0) {
-                this.step += 1;
+        init: function() {
                 this.history.push ( Life.copyGrid ( Life.grid ));
                 this.update(1);
+        },
 
-            //partial value, positive like .4
-            } else if (step > 0 && step < 1) {
+        go: function(step) {
+            
+            this.isUpdating = true;
 
-                //if 1.9 turned into 2.0
-                if ( this.step + step >= Math.ceil(this.step)) {
-                    console.log('turning the base');
+            if ( step > this.step ) {
 
-                    this.step += step;
-                    //wow am I breaking DRY or what
-                    if (this.step < this.history.length) {
-                        this.update( this.history[ Math.floor(this.step) ], step);
+                while ( step > this.step ) {
+
+                    this.step++;
+
+                    //if we've already hit this level, don't recalc
+                    if ( this.history[ this.step ]) {
+                        //only draw if it's within 15 steps
+                        if ( this.step - step < this.drawThreshold ) {
+                            this.update( this.history[ Math.floor(this.step) ], 1);
+                        }
                     } else {
                         Life.updateState();
                         this.history.push( Life.copyGrid ( Life.grid ));
-                        this.update(step);
+
+                        if (this.step - step < this.drawThreshold ) {
+                            this.update(step);
+                        }
                     }
-                } else {
-                    this.update(step);
-                    this.step += step;
                 }
-
-
-            //otherwise 1
-            } else if (step === 1) {
-
-                this.step += 1;
-
-                if (this.step < this.history.length) {
-                    this.update( this.history[ Math.floor(this.step) ], 1);
-                } else {
-                    Life.updateState();
-                    this.history.push( Life.copyGrid ( Life.grid ));
-                    this.update(1);
-                }
-
-            } else if (step > 1) {
-                this.isUpdating = true;
-                //only attempt to animate batch updates
-                //if it's less than ~10
-                if ( step < 10 ) {
-                    var self = this;
-                    (function go() {
-                        window.setTimeout(function() {
-                            if (step--) {
-                                self.go(1);
-                                go();
-                            } else {
-                                self.isUpdating = false;
-                            }
-                        }, 50);
-                    })();
-                } else {
-                    while (--step) {
-                        this.go(1);
-                    }
-                    this.isUpdating = false;
+            //moving backward
+            } else if (step < this.step) {
+                while ( step < this.step ) {
+                    this.step--;
+                    this.update ( this.history[ this.step ], 1);
                 }
             }
+
+            this.isUpdating = false;
         }
 
     };
@@ -226,9 +164,9 @@
         [2, 4, 6, 9, 10, 12, 14],
         [2, 3, 4, 7, 10, 16],
         [0, 1, 2, 3, 4, 5],
-        [3],
-        [0,1,2,3],
-        [1]
+        [3, 11, 13, 18, 21, 23],
+        [0,1,2,3, 10, 13, 14, 15, 17, 19, 21, 22],
+        [1, 10, 13, 15, 18, 21, 23]
     ];
 
     //starting = [[],[],[],[],[],[13,14,15]];
@@ -244,7 +182,7 @@
     }
 
     //initial update, draw everything
-    conway.go(0);
+    conway.init();
 
 
     //leak

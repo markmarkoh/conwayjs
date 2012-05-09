@@ -53,7 +53,7 @@
             currentScrollPos = 0,
             prevScrollPos = 0,
             step = 1,
-            maxSteps = 100,
+            maxSteps = 45,
             rangeY = d3.scale.linear().range([0, maxSteps]);
 
 
@@ -82,7 +82,7 @@
 
 
             if ( ! conway.isUpdating ) {
-                conway.go( targetStep - conway.step );
+                conway.go( targetStep );
             } else {
                 console.log('miss');
             }
@@ -95,8 +95,7 @@
 
         };
 
-        //$window.scroll(_.throttle( updateOnScroll, 120 ));
-        $window.scroll( updateOnScroll );
+        $window.scroll(_.throttle( updateOnScroll, 120 ));
     })();
 </script>
 
