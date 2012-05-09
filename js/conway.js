@@ -107,9 +107,9 @@
 
             reasonable options for now:
             conway.go(0);     -> initialize
-            conway.go(1);     -> move up one step
-            conway.go(-1);    -> move back one step
-            conway.go(.1);    -> go slowly
+            conway.go(5);     -> move to step 5
+            conway.go(1);    -> move back to step 1
+            conway.go(.1);    -> go slowly up .1
         */
         isUpdating: false,
         go: function(step, skip) {
