@@ -22,6 +22,8 @@
 
         history: [],
         step: 0,
+        targetStep: 0,
+        drawThreshold: 15,
 
         //store parallel grid with references to d3 objects
         grid: Life.copyGrid(Life.grid),
@@ -29,26 +31,38 @@
         // add a cell given it's column <col> and row <row>
         // make the X/Y slightly smaller. this is a hack, but a super
         // easy way to do rounded corners with adjacent elements
-        addCell: function(row, col) {
+        addCell: function(row, col, increment) {
 
-            if (d3.select('#c_' + row + '_' + col)[0][0] !== null) {
-                return;
+            var cell;
+
+            if (typeof increment === "undefined") {
+                increment = 0.1;
             }
-            var cell = board.append("rect")
-                .attr("fill", "#05182F")
-                .attr("x", col * this.cell.width * 0.8)
-                .attr("y", row * this.cell.width * 0.8)
-                .attr("rx", 3)
-                .attr("id", 'c_' + row + "_" + col)
-                .attr("height", this.cell.height)
-                .attr("width", this.cell.width)
-                .style('opacity', 0);
 
-            cell.transition()
-                .duration(600)
-                    .style("opacity", 1);
+           //if there is no cell there, add it
+           if ( this.grid[row][col] === 0 ) {
+                cell = board.append("rect")
+                    .attr("fill", "#05182F")
+                    .attr("x", col * this.cell.width * 0.8)
+                    .attr("y", row * this.cell.width * 0.8)
+                    .attr("rx", 3)
+                    .attr("id", 'c_' + row + "_" + col)
+                    .attr("height", this.cell.height)
+                    .attr("width", this.cell.width)
+                    .style('opacity', increment);
 
-            this.grid[row][col] = cell;
+                cell.increment = increment;
+
+                this.grid[row][col] = cell;
+            } else {
+                cell = this.grid[row][col];
+
+                cell.increment += increment;
+                cell.transition()
+                    .duration(150)
+                       .style("opacity", cell.increment);
+            }
+
         },
 
         //remove a cell given it's column <col> and row <row>
@@ -57,18 +71,23 @@
             if( ! this.grid[row][col] ) return;
             this.grid[row][col]
                 .transition()
-                .duration(400)
+                .duration(150)
                     .style("opacity", 0)
                     .delay(10).remove();
 
             this.grid[row][col] = 0;
         },
 
-        update: function(grid) {
+        update: function(grid, increment) {
 
-            if (typeof grid === "undefined") {
-                console.log(grid, 'man');
-                grid = Life.grid;
+            switch (typeof grid) {
+                case "number":
+                    increment = grid;
+                case "undefined":
+                    grid = Life.grid;
+                    break;
+                default:
+                    break;
             }
 
             //keep track of the history
@@ -76,43 +95,62 @@
             for( var i = 0; i < Life.WIDTH; i++) {
                 for ( var j = 0; j < Life.HEIGHT; j++) {
                     if ( grid[i][j] === 1 ) {
-                        this.addCell(i, j);
+                        this.addCell(i, j, increment);
                     } else {
-                        this.removeCell(i, j);
+                        this.removeCell(i, j, increment);
                     }
                 }
             }
         },
 
         /*
+            I love how *this* is my refactor from previously
+            unmanagable.
+
             reasonable options for now:
-            conway.go(0);     -> initialize
-            conway.go(1);     -> move up one step
-            conway.go(-1);    -> move back one step
+            conway.go(5);     -> move to step 5
+            conway.go(1);    -> move back to step 1
         */
+        isUpdating: false,
+        init: function() {
+                this.history.push ( Life.copyGrid ( Life.grid ));
+                this.update(1);
+        },
+
         go: function(step) {
-            if (typeof step === "undefined" || step > 0) {
+            
+            this.isUpdating = true;
 
-                //if the current step isn't the most recent
-                if (this.step < this.history.length) {
-                    this.update( this.history[this.step + 1]);
-                } else {
-                    Life.updateState();
-                    this.history.push( Life.copyGrid ( Life.grid ));
-                    this.update();
-                }
+            if ( step > this.step ) {
 
-                this.step += 1;
-            } else if (step === -1) {
-                if ( this.step > 1 ) {
-                    this.step -= 1;
-                    this.update( this.history[ this.step - 1 ]);
+                while ( step > this.step ) {
+
+                    this.step++;
+
+                    //if we've already hit this level, don't recalc
+                    if ( this.history[ this.step ]) {
+                        //only draw if it's within 15 steps
+                        if ( this.step - step < this.drawThreshold ) {
+                            this.update( this.history[ Math.floor(this.step) ], 1);
+                        }
+                    } else {
+                        Life.updateState();
+                        this.history.push( Life.copyGrid ( Life.grid ));
+
+                        if (this.step - step < this.drawThreshold ) {
+                            this.update(step);
+                        }
+                    }
                 }
-            } else if (step === 0) {
-                this.step += 1;
-                this.history.push( Life.copyGrid ( Life.grid ));
-                this.update();
+            //moving backward
+            } else if (step < this.step) {
+                while ( step < this.step ) {
+                    this.step--;
+                    this.update ( this.history[ this.step ], 1);
+                }
             }
+
+            this.isUpdating = false;
         }
 
     };
@@ -126,9 +164,9 @@
         [2, 4, 6, 9, 10, 12, 14],
         [2, 3, 4, 7, 10, 16],
         [0, 1, 2, 3, 4, 5],
-        [3],
-        [0,1,2,3],
-        [1]
+        [3, 11, 13, 18, 21, 23],
+        [0,1,2,3, 10, 13, 14, 15, 17, 19, 21, 22],
+        [1, 10, 13, 15, 18, 21, 23]
     ];
 
     //starting = [[],[],[],[],[],[13,14,15]];
@@ -144,7 +182,7 @@
     }
 
     //initial update, draw everything
-    conway.go(0);
+    conway.init();
 
 
     //leak
