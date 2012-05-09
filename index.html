@@ -13,6 +13,17 @@
 	<link rel="stylesheet" href="css/style.css">
 
 	<script src="js/libs/modernizr-2.5.3.min.js"></script>
+    <style>
+        body {
+            height: 5000px;
+        }
+
+        #board {
+            position: fixed;
+            top: 0;
+            right: 0;
+        }
+    </style>
 </head>
 <body>
 <!--[if lt IE 7]><p class=chromeframe>Your browser is <em>ancient!</em> <a href="http://browsehappy.com/">Upgrade to a different browser</a> or <a href="http://www.google.com/chromeframe/?redirect=true">install Google Chrome Frame</a> to experience this site.</p><![endif]-->
@@ -30,6 +41,63 @@
 <script src="js/libs/d3.js"></script>
 <script src="js/algorithm.js"></script>
 <script src="js/conway.js"></script>
+
+<script src="js/libs/jquery.min.js"></script>
+<script src="js/libs/_.js"></script>
+<script>
+    (function() {
+        var $window = $(window),
+            $body = $('body'),
+            height = $('body').height(),
+            isScrollingDown = true,
+            currentScrollPos = 0,
+            prevScrollPos = 0,
+            step = 1,
+            maxSteps = 70,
+            rangeY = d3.scale.linear().range([0, maxSteps]);
+
+
+        window.rangeY = rangeY;
+
+        var updateOnScroll = function() {
+            currentScrollPos = $body.scrollTop();
+
+            if (currentScrollPos > prevScrollPos) {
+                isScrollingDown = true;
+            } else {
+                isScrollingDown = false;
+            }
+
+
+            if ( currentScrollPos < 0 ) {
+                //Hey Lion, Suck it. 
+                return;
+            }
+            //target: 14, current: 10 => go(4);
+            //target 4, current: 6 => go(-2)
+
+            var percentDownThePage = currentScrollPos / height;
+
+            var targetStep = Math.floor ( rangeY( percentDownThePage ) );
+
+
+            if ( ! conway.isUpdating ) {
+                conway.go( targetStep );
+            } else {
+                console.log('miss');
+            }
+
+
+
+
+
+            prevScrollPos = currentScrollPos; 
+
+        };
+
+        $window.scroll(_.throttle( updateOnScroll, 120 ));
+    })();
+</script>
 
 </body>
 </html>
